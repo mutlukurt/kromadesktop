@@ -7,7 +7,7 @@ Official macOS desktop release repository for **Kroma Studio** — Sovereign Opt
 
 ### Cryptographic Verification (SHA-256)
 ```bash
-f2cf240414a2b41b6eb9d8dd8de06be77f75703770c8a84ce115d26ed8aac24f  Kroma-Studio-1.0.0-arm64.dmg
+276bcb8d5e5b6a939444399ec32546541b7265f5fbffe8378669387648636524  Kroma-Studio-1.0.0-arm64.dmg
 ```
 
 ## Architecture
