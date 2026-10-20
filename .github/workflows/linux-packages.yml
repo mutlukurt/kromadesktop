@@ -91,7 +91,9 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y ./pkg/*.deb xvfb
           test -x "/opt/Kroma Ecosystem/kroma-ecosystem"
-          test -f /usr/share/applications/kroma-ecosystem.desktop
+          # The menu entry's file name comes from electron-builder; find it by content, not by name.
+          desktop=$(grep -l -i 'kroma' /usr/share/applications/*.desktop | head -1)
+          test -n "$desktop" && echo "menu entry: $desktop" && grep -E '^(Name|Exec|Icon)=' "$desktop"
       - name: Open the app and test its pages
         run: |
           xvfb-run -a -s '-screen 0 1440x900x24' bash -c '"/opt/Kroma Ecosystem/kroma-ecosystem" --remote-debugging-port=$KROMA_DEBUG_PORT > app.log 2>&1 & node .github/smoke/smoke.mjs out-deb'
