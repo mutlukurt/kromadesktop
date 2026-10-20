@@ -100,7 +100,10 @@ jobs:
       - name: Install the .deb
         run: |
           sudo apt-get update
+          set -x
           sudo apt-get install -y ./pkg/*.deb xvfb
+          dpkg -L kroma-ecosystem | grep -v '^/opt/Kroma Ecosystem/' || true
+          ls -la "/opt/Kroma Ecosystem/kroma-ecosystem" "/opt/Kroma Ecosystem/chrome-sandbox"
           test -x "/opt/Kroma Ecosystem/kroma-ecosystem"
           # The menu entry's file name comes from electron-builder; find it by content, not by name.
           desktop=$(grep -l -i 'kroma' /usr/share/applications/*.desktop | head -1)
@@ -233,7 +236,7 @@ jobs:
       - name: Install the .flatpak
         run: |
           ls pkg/*.flatpak
-          sudo apt-get update && sudo apt-get install -y flatpak xvfb
+          sudo apt-get update && sudo apt-get install -y flatpak xvfb dbus dbus-x11
           flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
           flatpak install --user -y --noninteractive pkg/*.flatpak
       - name: Open the app and check its window
@@ -242,7 +245,7 @@ jobs:
           sudo apt-get install -y x11-utils xdotool imagemagick
           mkdir -p out-flatpak
           Xvfb :99 -screen 0 1440x900x24 & sleep 2
-          DISPLAY=:99 flatpak run com.kroma.ecosystem > app.log 2>&1 &
+          DISPLAY=:99 dbus-run-session -- flatpak run com.kroma.ecosystem > app.log 2>&1 &
           for i in $(seq 1 60); do DISPLAY=:99 xdotool search --name 'Kroma' > /dev/null 2>&1 && break; sleep 2; done
           DISPLAY=:99 xdotool search --name 'Kroma' || { echo 'No Kroma window appeared'; tail -n 80 app.log; exit 1; }
           sleep 25
