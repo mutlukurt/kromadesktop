@@ -83,7 +83,7 @@ Each file's SHA-256 checksum should match exactly:
 
 | File | SHA-256 |
 |---|---|
-| `Kroma-2.7.0-arm64.dmg` | `ba4a0ee777f6a1aa2239aa4116141422080728828b446751e528bf1f127df7d8` |
+| `Kroma-2.7.0-arm64.dmg` | `4bf2b1d3a7363218b770bdc3bf1ce3959a1e7845a19f2da093aee70499f85e20` |
 | `Kroma-Setup-2.7.0-x64.exe` | `5f0946c87e1255bf8fa63392cdef5137328854c40baed0d55ed2232426cceec5` |
 
 ```bash
