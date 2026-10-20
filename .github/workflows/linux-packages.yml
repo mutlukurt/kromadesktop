@@ -42,7 +42,10 @@ jobs:
           cd appimage && chmod +x Kroma-*.AppImage && ./Kroma-*.AppImage --appimage-extract > /dev/null
           # Keep only the app itself: drop the AppImage launcher, icons and desktop file at the root.
           rm -rf squashfs-root/AppRun squashfs-root/.DirIcon squashfs-root/*.desktop squashfs-root/*.png squashfs-root/usr
+          # --appimage-extract leaves directories readable by the owner only; installed users need read/execute.
+          chmod -R u+rwX,go+rX,go-w squashfs-root
           test -x squashfs-root/kroma-ecosystem && test -f squashfs-root/resources/app.asar
+          stat -c '%A %n' squashfs-root squashfs-root/kroma-ecosystem squashfs-root/resources
           ls squashfs-root
 
       - name: Install packaging tools
@@ -87,6 +90,7 @@ jobs:
           gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --pattern 'Kroma-*-x86_64.AppImage' --dir appimage
           cd appimage && chmod +x Kroma-*.AppImage && ./Kroma-*.AppImage --appimage-extract > /dev/null && cd ..
           rm -rf appimage/squashfs-root/AppRun appimage/squashfs-root/.DirIcon appimage/squashfs-root/*.desktop appimage/squashfs-root/*.png appimage/squashfs-root/usr
+          chmod -R u+rwX,go+rX,go-w appimage/squashfs-root
           mv appimage/squashfs-root linux/snap-build/app
           sed -i "s/^version: .*/version: '${TAG#v}'/" linux/snap-build/snap/snapcraft.yaml
       - uses: snapcore/action-build@v1
@@ -157,7 +161,11 @@ jobs:
       - name: Open the app and test its pages
         # The container runs as root, where Chromium refuses its sandbox; a normal Fedora user keeps it.
         run: |
-          xvfb-run -a -s '-screen 0 1440x900x24' bash -c '"/opt/Kroma Ecosystem/kroma-ecosystem" --no-sandbox --remote-debugging-port=$KROMA_DEBUG_PORT > app.log 2>&1 & node .github/smoke/smoke.mjs out-rpm || { tail -n 80 app.log; exit 1; }'
+          # Run as a normal user so permission problems in the package show up (root can read anything).
+          # Chromium's sandbox cannot start inside this container, so --no-sandbox is for the test only.
+          useradd -m tester
+          chmod -R a+rwX . && mkdir -p out-rpm && chmod 777 out-rpm
+          runuser -u tester -- xvfb-run -a -s '-screen 0 1440x900x24' bash -c '"/opt/Kroma Ecosystem/kroma-ecosystem" --no-sandbox --remote-debugging-port=$KROMA_DEBUG_PORT > /tmp/app.log 2>&1 & KROMA_DEBUG_PORT=$KROMA_DEBUG_PORT node .github/smoke/smoke.mjs out-rpm || { tail -n 80 /tmp/app.log; exit 1; }'
       - name: Uninstall
         run: dnf remove -y kroma-ecosystem && test ! -e "/opt/Kroma Ecosystem/kroma-ecosystem"
       - uses: actions/upload-artifact@v4
