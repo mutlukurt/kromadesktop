@@ -91,6 +91,9 @@ jobs:
           cd appimage && chmod +x Kroma-*.AppImage && ./Kroma-*.AppImage --appimage-extract > /dev/null && cd ..
           rm -rf appimage/squashfs-root/AppRun appimage/squashfs-root/.DirIcon appimage/squashfs-root/*.desktop appimage/squashfs-root/*.png appimage/squashfs-root/usr
           chmod -R u+rwX,go+rX,go-w appimage/squashfs-root
+          # A snap cannot ship a setuid-root helper, so drop chrome-sandbox: Chromium then uses its
+          # user-namespace sandbox, which browser-support (allow-sandbox) permits. The app stays sandboxed.
+          rm -f appimage/squashfs-root/chrome-sandbox
           mv appimage/squashfs-root linux/snap-build/app
           sed -i "s/^version: .*/version: '${TAG#v}'/" linux/snap-build/snap/snapcraft.yaml
       - uses: snapcore/action-build@v1
@@ -235,6 +238,7 @@ jobs:
           sd=$(convert out-snap/screen.png -colorspace gray -format '%[fx:standard_deviation]' info:)
           echo "screen std-dev: $sd"; tail -n 20 app.log
           awk -v s="$sd" 'BEGIN { exit !(s > 0.05) }' || { echo 'The window is blank'; exit 1; }
+          if grep -qi 'no-sandbox\|sandbox is disabled' app.log; then echo 'The app ran without its sandbox'; exit 1; fi
           echo PASSED
       - name: Uninstall
         run: sudo snap remove kroma-ecosystem
