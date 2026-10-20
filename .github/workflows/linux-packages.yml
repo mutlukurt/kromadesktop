@@ -107,7 +107,7 @@ jobs:
           test -n "$desktop" && echo "menu entry: $desktop" && grep -E '^(Name|Exec|Icon)=' "$desktop"
       - name: Open the app and test its pages
         run: |
-          xvfb-run -a -s '-screen 0 1440x900x24' bash -c '"/opt/Kroma Ecosystem/kroma-ecosystem" --remote-debugging-port=$KROMA_DEBUG_PORT > app.log 2>&1 & node .github/smoke/smoke.mjs out-deb'
+          xvfb-run -a -s '-screen 0 1440x900x24' bash -c '"/opt/Kroma Ecosystem/kroma-ecosystem" --remote-debugging-port=$KROMA_DEBUG_PORT > app.log 2>&1 & node .github/smoke/smoke.mjs out-deb || { tail -n 80 app.log; exit 1; }'
       - name: Uninstall
         run: sudo apt-get remove -y kroma-ecosystem && test ! -e "/opt/Kroma Ecosystem/kroma-ecosystem"
       - uses: actions/upload-artifact@v4
@@ -135,7 +135,7 @@ jobs:
       - name: Open the app and test its pages
         # The container runs as root, where Chromium refuses its sandbox; a normal Fedora user keeps it.
         run: |
-          xvfb-run -a -s '-screen 0 1440x900x24' bash -c '"/opt/Kroma Ecosystem/kroma-ecosystem" --no-sandbox --remote-debugging-port=$KROMA_DEBUG_PORT > app.log 2>&1 & node .github/smoke/smoke.mjs out-rpm'
+          xvfb-run -a -s '-screen 0 1440x900x24' bash -c '"/opt/Kroma Ecosystem/kroma-ecosystem" --no-sandbox --remote-debugging-port=$KROMA_DEBUG_PORT > app.log 2>&1 & node .github/smoke/smoke.mjs out-rpm || { tail -n 80 app.log; exit 1; }'
       - name: Uninstall
         run: dnf remove -y kroma-ecosystem && test ! -e "/opt/Kroma Ecosystem/kroma-ecosystem"
       - uses: actions/upload-artifact@v4
@@ -236,9 +236,22 @@ jobs:
           sudo apt-get update && sudo apt-get install -y flatpak xvfb
           flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
           flatpak install --user -y --noninteractive pkg/*.flatpak
-      - name: Open the app and test its pages
+      - name: Open the app and check its window
+        # Same check as the snap: the window appears, stays open and draws a non-blank screen.
         run: |
-          xvfb-run -a -s '-screen 0 1440x900x24' bash -c 'flatpak run com.kroma.ecosystem --remote-debugging-port=$KROMA_DEBUG_PORT > app.log 2>&1 & node .github/smoke/smoke.mjs out-flatpak'
+          sudo apt-get install -y x11-utils xdotool imagemagick
+          mkdir -p out-flatpak
+          Xvfb :99 -screen 0 1440x900x24 & sleep 2
+          DISPLAY=:99 flatpak run com.kroma.ecosystem > app.log 2>&1 &
+          for i in $(seq 1 60); do DISPLAY=:99 xdotool search --name 'Kroma' > /dev/null 2>&1 && break; sleep 2; done
+          DISPLAY=:99 xdotool search --name 'Kroma' || { echo 'No Kroma window appeared'; tail -n 80 app.log; exit 1; }
+          sleep 25
+          flatpak ps | grep -q com.kroma.ecosystem || { echo 'The app quit'; tail -n 80 app.log; exit 1; }
+          DISPLAY=:99 import -window root out-flatpak/screen.png
+          sd=$(convert out-flatpak/screen.png -colorspace gray -format '%[fx:standard_deviation]' info:)
+          echo "screen std-dev: $sd"; tail -n 20 app.log
+          awk -v s="$sd" 'BEGIN { exit !(s > 0.05) }' || { echo 'The window is blank'; exit 1; }
+          echo PASSED
       - name: Uninstall
         run: flatpak uninstall --user -y --noninteractive com.kroma.ecosystem
       - uses: actions/upload-artifact@v4
