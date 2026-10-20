@@ -56,8 +56,15 @@ jobs:
           cd linux && npm pkg set version="${TAG#v}" && npm install --no-audit --no-fund
 
       - name: Build .deb and .rpm
+        # Each package carries resources/package-type, which the in-app updater reads to install
+        # the right kind of update (dpkg for .deb, rpm/dnf for .rpm).
         working-directory: linux
-        run: npx electron-builder --prepackaged ../appimage/squashfs-root --linux deb rpm --x64 --publish never
+        run: |
+          for t in deb rpm; do
+            rm -rf "../root-$t" && cp -a ../appimage/squashfs-root "../root-$t"
+            echo "$t" > "../root-$t/resources/package-type"
+            npx electron-builder --prepackaged "../root-$t" --linux "$t" --x64 --publish never
+          done
 
       - name: Build .flatpak
         id: flatpak
@@ -323,3 +330,36 @@ jobs:
           echo "deb=$DEB rpm=$RPM snap=$SNAP flatpak=$FLATPAK"
           if [ ${#files[@]} -gt 0 ]; then gh release upload "$TAG" "${files[@]}" --repo "$GITHUB_REPOSITORY" --clobber; fi
           for f in "${files[@]}"; do sha256sum "$f"; done
+      - name: Publish the Linux update manifest
+        # latest-linux.yml tells installed apps about this version: the AppImage plus every .deb/.rpm that passed,
+        # each with its size and base64 sha512, which the updater checks before installing.
+        env:
+          DEB: ${{ needs.test-deb.result }}
+          RPM: ${{ needs.test-rpm.result }}
+        run: |
+          gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --pattern 'Kroma-*-x86_64.AppImage' --dir pkg --clobber
+          manifest=(pkg/*.AppImage)
+          [ "$DEB" = success ] && manifest+=(pkg/*.deb)
+          [ "$RPM" = success ] && manifest+=(pkg/*.rpm)
+          python3 - "${TAG#v}" "${manifest[@]}" > latest-linux.yml <<'PY'
+          import base64, datetime, hashlib, os, sys
+          version, files = sys.argv[1], sys.argv[2:]
+          def sha512(p):
+              h = hashlib.sha512()
+              with open(p, 'rb') as f:
+                  for chunk in iter(lambda: f.read(1 << 20), b''):
+                      h.update(chunk)
+              return base64.b64encode(h.digest()).decode()
+          entries = [(os.path.basename(p), sha512(p), os.path.getsize(p)) for p in files]
+          print(f'version: {version}')
+          print('files:')
+          for name, sha, size in entries:
+              print(f'  - url: {name}')
+              print(f'    sha512: {sha}')
+              print(f'    size: {size}')
+          print(f'path: {entries[0][0]}')
+          print(f'sha512: {entries[0][1]}')
+          print(f"releaseDate: '{datetime.datetime.utcnow().isoformat(timespec='milliseconds')}Z'")
+          PY
+          cat latest-linux.yml
+          gh release upload "$TAG" latest-linux.yml --repo "$GITHUB_REPOSITORY" --clobber
