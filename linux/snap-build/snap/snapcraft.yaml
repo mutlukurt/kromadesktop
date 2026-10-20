@@ -1,0 +1,57 @@
+# Snap of the Kroma desktop app, built from the release AppImage's app files (copied into app/ by the
+# workflow). Chromium's own sandbox stays on through browser-support with allow-sandbox.
+name: kroma-ecosystem
+base: core22
+version: '0.0.0'
+title: Kroma Ecosystem
+summary: Notes, PDFs, slides and media in one private workspace
+description: |
+  Kroma Ecosystem puts Docs, Slides, PDF tools, OCR, transcription, flashcards,
+  citations and more side by side. Files are processed on your computer.
+grade: stable
+confinement: strict
+architectures:
+  - build-on: amd64
+
+plugs:
+  browser-sandbox:
+    interface: browser-support
+    allow-sandbox: true
+
+apps:
+  kroma-ecosystem:
+    command: app/kroma-ecosystem
+    desktop: meta/gui/kroma-ecosystem.desktop
+    extensions: [gnome]
+    environment:
+      TMPDIR: $XDG_RUNTIME_DIR
+    plugs:
+      - browser-sandbox
+      - home
+      - network
+      - opengl
+      - audio-playback
+      - audio-record
+      - pulseaudio
+      - camera
+      - removable-media
+      - screen-inhibit-control
+      - unity7
+
+parts:
+  kroma:
+    plugin: dump
+    source: app/
+    organize:
+      '*': app/
+    stage-packages:
+      - libnss3
+      - libnspr4
+      - libasound2
+      - libxss1
+      - libxtst6
+      - libsecret-1-0
+      - libgbm1
+      - libdrm2
+      - libxshmfence1
+      - libxkbfile1

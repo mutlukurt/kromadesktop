@@ -56,12 +56,6 @@ jobs:
         working-directory: linux
         run: npx electron-builder --prepackaged ../appimage/squashfs-root --linux deb rpm --x64 --publish never
 
-      - name: Build .snap
-        id: snap
-        continue-on-error: true
-        working-directory: linux
-        run: npx electron-builder --prepackaged ../appimage/squashfs-root --linux snap --x64 --publish never
-
       - name: Build .flatpak
         id: flatpak
         continue-on-error: true
@@ -77,9 +71,34 @@ jobs:
           path: |
             linux/dist/*.deb
             linux/dist/*.rpm
-            linux/dist/*.snap
             linux/dist/*.flatpak
           if-no-files-found: error
+          retention-days: 14
+
+  build-snap:
+    # snapcraft packages the same app files as the AppImage, with the GNOME extension for desktop
+    # integration. Always built in this run, even when the other packages are reused.
+    runs-on: ubuntu-22.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Unpack the AppImage into the snap project
+        run: |
+          gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --pattern 'Kroma-*-x86_64.AppImage' --dir appimage
+          cd appimage && chmod +x Kroma-*.AppImage && ./Kroma-*.AppImage --appimage-extract > /dev/null && cd ..
+          rm -rf appimage/squashfs-root/AppRun appimage/squashfs-root/.DirIcon appimage/squashfs-root/*.desktop appimage/squashfs-root/*.png appimage/squashfs-root/usr
+          mv appimage/squashfs-root linux/snap-build/app
+          sed -i "s/^version: .*/version: '${TAG#v}'/" linux/snap-build/snap/snapcraft.yaml
+      - uses: snapcore/action-build@v1
+        id: snapcraft
+        with:
+          path: linux/snap-build
+      - name: Name the snap
+        run: mkdir -p snap-out && mv "${{ steps.snapcraft.outputs.snap }}" "snap-out/Kroma-${TAG#v}-amd64.snap" && ls -la snap-out
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux-snap
+          path: snap-out/*.snap
           retention-days: 14
 
   test-deb:
@@ -176,8 +195,7 @@ jobs:
           retention-days: 14
 
   test-snap:
-    needs: build
-    if: ${{ always() && (needs.build.result == 'success' || inputs.packages_from_run) }}
+    needs: build-snap
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
@@ -186,10 +204,8 @@ jobs:
         with: { node-version: '22' }
       - uses: actions/download-artifact@v4
         with:
-          name: linux-packages
+          name: linux-snap
           path: pkg
-          run-id: ${{ inputs.packages_from_run || github.run_id }}
-          github-token: ${{ github.token }}
       - name: Install the .snap
         run: |
           ls pkg/*.snap
@@ -262,7 +278,7 @@ jobs:
         with: { name: smoke-flatpak, path: out-flatpak, retention-days: 14 }
 
   publish:
-    needs: [build, test-deb, test-rpm, test-snap, test-flatpak]
+    needs: [build, build-snap, test-deb, test-rpm, test-snap, test-flatpak]
     if: ${{ always() && (needs.build.result == 'success' || inputs.packages_from_run) }}
     runs-on: ubuntu-24.04
     permissions:
@@ -275,6 +291,11 @@ jobs:
           path: pkg
           run-id: ${{ inputs.packages_from_run || github.run_id }}
           github-token: ${{ github.token }}
+      - uses: actions/download-artifact@v4
+        if: needs.build-snap.result == 'success'
+        with:
+          name: linux-snap
+          path: pkg
       - name: Attach the packages that passed
         env:
           DEB: ${{ needs.test-deb.result }}

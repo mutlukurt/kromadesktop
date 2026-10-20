@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=Kroma Ecosystem
+Comment=Notes, PDFs, slides and media in one private workspace
+Exec=kroma-ecosystem %U
+Icon=${SNAP}/meta/gui/kroma-ecosystem.png
+Type=Application
+Categories=Office;
+StartupWMClass=Kroma Ecosystem
+Keywords=notes;pdf;slides;ocr;transcribe;
