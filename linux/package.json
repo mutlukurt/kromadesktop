@@ -19,6 +19,14 @@
       "output": "dist"
     },
     "npmRebuild": false,
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "mutlukurt",
+        "repo": "kromadesktop",
+        "releaseType": "release"
+      }
+    ],
     "linux": {
       "icon": "build/icon.png",
       "category": "Office",
