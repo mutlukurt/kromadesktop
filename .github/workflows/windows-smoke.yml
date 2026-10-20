@@ -1,0 +1,80 @@
+# Installs the Windows build of a release on a clean Windows machine, opens the app, steps through
+# its main pages and uninstalls it again. Screenshots and a report are kept as the run's artifact.
+name: Windows install test
+
+on:
+  release:
+    types: [published, prereleased]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag to test (for example v2.7.0)
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    env:
+      TAG: ${{ github.event.release.tag_name || inputs.tag }}
+      GH_TOKEN: ${{ github.token }}
+      KROMA_DEBUG_PORT: '9333'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Download the installer
+        shell: pwsh
+        run: |
+          gh release download $env:TAG --repo $env:GITHUB_REPOSITORY --pattern 'Kroma-Setup-*.exe' --dir installer
+          Get-ChildItem installer | Format-Table Name, Length
+
+      - name: Install silently
+        shell: pwsh
+        run: |
+          $setup = (Get-ChildItem installer -Filter 'Kroma-Setup-*.exe' | Select-Object -First 1).FullName
+          $p = Start-Process -FilePath $setup -ArgumentList '/S' -Wait -PassThru
+          if ($p.ExitCode -ne 0) { throw "Installer exited with $($p.ExitCode)" }
+          $exe = Get-ChildItem "$env:LOCALAPPDATA\Programs" -Recurse -Filter 'Kroma Ecosystem.exe' -ErrorAction SilentlyContinue | Select-Object -First 1
+          if (-not $exe) { throw 'Kroma Ecosystem.exe was not installed' }
+          "KROMA_EXE=$($exe.FullName)" | Out-File -FilePath $env:GITHUB_ENV -Append
+          "KROMA_DIR=$($exe.DirectoryName)" | Out-File -FilePath $env:GITHUB_ENV -Append
+          Write-Host "Installed to $($exe.DirectoryName)"
+          $desktop = Join-Path ([Environment]::GetFolderPath('Desktop')) 'Kroma Ecosystem.lnk'
+          $startMenu = Get-ChildItem "$env:APPDATA\Microsoft\Windows\Start Menu\Programs" -Recurse -Filter 'Kroma Ecosystem.lnk' -ErrorAction SilentlyContinue
+          Write-Host "Desktop shortcut: $(Test-Path $desktop)  Start menu shortcut: $([bool]$startMenu)"
+          if (-not (Test-Path $desktop) -or -not $startMenu) { throw 'Shortcuts are missing' }
+
+      - name: Open the app and test its pages
+        shell: pwsh
+        run: |
+          $app = Start-Process -FilePath $env:KROMA_EXE -ArgumentList "--remote-debugging-port=$env:KROMA_DEBUG_PORT" -PassThru
+          node .github/smoke/smoke.mjs smoke-out
+          $code = $LASTEXITCODE
+          if ($app.HasExited) { throw "The app quit on its own (exit code $($app.ExitCode))" }
+          Get-Process -Name 'Kroma Ecosystem' -ErrorAction SilentlyContinue | Stop-Process -Force
+          exit $code
+
+      - name: Uninstall silently
+        shell: pwsh
+        run: |
+          Start-Sleep -Seconds 3
+          $uninstaller = Get-ChildItem $env:KROMA_DIR -Filter 'Uninstall*.exe' | Select-Object -First 1
+          if (-not $uninstaller) { throw 'No uninstaller found' }
+          Start-Process -FilePath $uninstaller.FullName -ArgumentList '/S' -Wait
+          Start-Sleep -Seconds 5
+          if (Test-Path $env:KROMA_EXE) { throw 'The app is still there after uninstalling' }
+          Write-Host 'Uninstalled cleanly'
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: windows-smoke-${{ env.TAG }}
+          path: smoke-out
+          retention-days: 14
