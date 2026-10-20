@@ -10,13 +10,43 @@
 ![macOS](https://img.shields.io/badge/macOS-12%2B%20·%20Apple%20silicon-111111?logo=apple)
 ![Windows](https://img.shields.io/badge/Windows-10%20·%2011%20·%2064--bit-111111?logo=windows)
 
-[Website](https://kromaecosystem.tech) · [Use it in the browser](https://kromaecosystem.tech) · [Release notes](https://github.com/mutlukurt/kromadesktop/releases)
+**[Download for Mac](https://github.com/mutlukurt/kromadesktop/releases/download/v2.7.0/Kroma-2.7.0-arm64.dmg)** · **[Download for Windows](https://github.com/mutlukurt/kromadesktop/releases/download/v2.7.0/Kroma-Setup-2.7.0-x64.exe)** · [Use it in the browser](https://kromaecosystem.tech)
 
 </div>
 
 <br>
 
-<p align="center"><img src="docs/store.jpg" width="880" alt="The Kroma Store inside the desktop app, showing the Lottie animations tab"></p>
+<p align="center"><img src="docs/kroma-promo.webp" width="880" alt="A 30-second tour of Kroma: Docs, templates, Slides, OCR handing its text to Docs, and on-device processing"></p>
+
+## One tool hands its result to the next
+
+<p align="center"><img src="docs/ocr-to-docs.jpg" width="880" alt="Text read from an invoice in Studio OCR, saved straight into a Docs page"></p>
+
+Scan an invoice in **Studio OCR** and save the text to **Docs**. Turn a PDF into notes, a recording into a transcript, a highlight in **Reader** into a flashcard in **Recall**. Every studio can pass its result to the next one.
+
+## Docs, with blocks and databases
+
+<p align="center"><img src="docs/docs-databases.jpg" width="880" alt="A Docs page with a task board database"></p>
+
+Block notes, tables, boards and calendars, a knowledge graph, and thousands of ready-made templates.
+
+## Slides, with a design library built in
+
+<p align="center"><img src="docs/slides-elements.jpg" width="880" alt="Dragging a generated badge from the Elements panel onto a slide"></p>
+
+Hundreds of slide templates, AI decks in any language, and drag-and-drop stickers, photos, icons, charts and design elements.
+
+## Kroma Store
+
+<p align="center"><img src="docs/store.jpg" width="880" alt="The Kroma Store in the desktop app, on the Lottie tab"></p>
+
+Original stickers, animations, Lottie files, design elements and templates, made for Kroma. Free ones for personal use; Pro unlocks all of them, with commercial use.
+
+## Files are processed on your device
+
+<p align="center"><img src="docs/on-device.jpg" width="880" alt="PDF Studio and Studio OCR work without uploading files"></p>
+
+PDF editing, OCR, image conversion and Whisper transcription run on your computer. Nothing is uploaded unless you turn on cloud sync or use Kroma AI.
 
 ## Download
 
@@ -66,15 +96,9 @@ shasum -a 256 ~/Downloads/Kroma-2.7.0-arm64.dmg
 Get-FileHash $HOME\Downloads\Kroma-Setup-2.7.0-x64.exe
 ```
 
-## What's inside
+## All 21 studios
 
-<p align="center"><img src="docs/slides.jpg" width="880" alt="The Slides studio in the desktop app"></p>
-
-- **Docs**, with thousands of templates, plus **Slides** with AI decks, templates, photos and design elements
-- **PDF Studio**, **Studio OCR** (Apple Vision on Mac) and **Transcribe**, using Whisper on your device
-- **Reader**, **Recall** with FSRS flashcards, **Citations** and **Vault**, which encrypts files with a password only you know
-- **Audio Lab** with a crash-safe 10-hour recorder, and **Screen & GIF**
-- **Kroma Store**: original stickers, animations, Lottie files and design elements
+**Docs** · **Slides** · **PDF Studio** · **Studio OCR** (Apple Vision on Mac) · **Convert Suite** · **Transcribe** (Whisper) · **Reader** · **Recall** (FSRS flashcards) · **Citations Lab** · **Vault** · **Audio Lab** (crash-safe 10-hour recorder) · **Screen & GIF** · **Diagram Studio** · **Palette Lab** · **Kroma Compare** · **Kroma AI** and more.
 
 ## Privacy and security
 
