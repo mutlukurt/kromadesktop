@@ -1,0 +1,226 @@
+# Builds the .deb, .rpm, .snap and .flatpak packages from the release's AppImage (so every Linux package
+# ships the exact same app), installs each one on a clean machine, opens the app, steps through its main
+# pages, and attaches only the packages that passed to the release.
+name: Linux packages
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag (for example v2.7.0)
+        required: true
+
+permissions:
+  contents: read
+
+env:
+  TAG: ${{ github.event.release.tag_name || inputs.tag }}
+  GH_TOKEN: ${{ github.token }}
+  KROMA_DEBUG_PORT: '9333'
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Unpack the AppImage
+        run: |
+          gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --pattern 'Kroma-*-x86_64.AppImage' --dir appimage
+          cd appimage && chmod +x Kroma-*.AppImage && ./Kroma-*.AppImage --appimage-extract > /dev/null
+          # Keep only the app itself: drop the AppImage launcher, icons and desktop file at the root.
+          rm -rf squashfs-root/AppRun squashfs-root/.DirIcon squashfs-root/*.desktop squashfs-root/*.png squashfs-root/usr
+          test -x squashfs-root/kroma-ecosystem && test -f squashfs-root/resources/app.asar
+          ls squashfs-root
+
+      - name: Install packaging tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y rpm flatpak flatpak-builder
+          flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+          cd linux && npm pkg set version="${TAG#v}" && npm install --no-audit --no-fund
+
+      - name: Build .deb and .rpm
+        working-directory: linux
+        run: npx electron-builder --prepackaged ../appimage/squashfs-root --linux deb rpm --x64 --publish never
+
+      - name: Build .snap
+        id: snap
+        continue-on-error: true
+        working-directory: linux
+        run: npx electron-builder --prepackaged ../appimage/squashfs-root --linux snap --x64 --publish never
+
+      - name: Build .flatpak
+        id: flatpak
+        continue-on-error: true
+        working-directory: linux
+        run: npx electron-builder --prepackaged ../appimage/squashfs-root --linux flatpak --x64 --publish never
+
+      - name: List packages
+        run: ls -la linux/dist/*.deb linux/dist/*.rpm linux/dist/*.snap linux/dist/*.flatpak 2>/dev/null || true
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux-packages
+          path: |
+            linux/dist/*.deb
+            linux/dist/*.rpm
+            linux/dist/*.snap
+            linux/dist/*.flatpak
+          if-no-files-found: error
+          retention-days: 14
+
+  test-deb:
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '22' }
+      - uses: actions/download-artifact@v4
+        with: { name: linux-packages, path: pkg }
+      - name: Install the .deb
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ./pkg/*.deb xvfb
+          test -x "/opt/Kroma Ecosystem/kroma-ecosystem"
+          test -f /usr/share/applications/kroma-ecosystem.desktop
+      - name: Open the app and test its pages
+        run: |
+          xvfb-run -a -s '-screen 0 1440x900x24' bash -c '"/opt/Kroma Ecosystem/kroma-ecosystem" --remote-debugging-port=$KROMA_DEBUG_PORT > app.log 2>&1 & node .github/smoke/smoke.mjs out-deb'
+      - name: Uninstall
+        run: sudo apt-get remove -y kroma-ecosystem && test ! -e "/opt/Kroma Ecosystem/kroma-ecosystem"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: smoke-deb, path: out-deb, retention-days: 14 }
+
+  test-rpm:
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    container: fedora:41
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with: { name: linux-packages, path: pkg }
+      - name: Install the .rpm
+        run: |
+          dnf install -y ./pkg/*.rpm nodejs xorg-x11-server-Xvfb xorg-x11-xauth
+          test -x "/opt/Kroma Ecosystem/kroma-ecosystem"
+      - name: Open the app and test its pages
+        # The container runs as root, where Chromium refuses its sandbox; a normal Fedora user keeps it.
+        run: |
+          xvfb-run -a -s '-screen 0 1440x900x24' bash -c '"/opt/Kroma Ecosystem/kroma-ecosystem" --no-sandbox --remote-debugging-port=$KROMA_DEBUG_PORT > app.log 2>&1 & node .github/smoke/smoke.mjs out-rpm'
+      - name: Uninstall
+        run: dnf remove -y kroma-ecosystem && test ! -e "/opt/Kroma Ecosystem/kroma-ecosystem"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: smoke-rpm, path: out-rpm, retention-days: 14 }
+
+  test-appimage:
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-22.04, ubuntu-24.04]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '22' }
+      - name: Download the AppImage
+        run: |
+          gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --pattern 'Kroma-*-x86_64.AppImage' --dir appimage
+          chmod +x appimage/*.AppImage
+          sudo apt-get update
+          sudo apt-get install -y xvfb libfuse2 || sudo apt-get install -y xvfb libfuse2t64
+      - name: Open the app and test its pages
+        run: |
+          xvfb-run -a -s '-screen 0 1440x900x24' bash -c 'appimage/Kroma-*.AppImage --remote-debugging-port=$KROMA_DEBUG_PORT > app.log 2>&1 & node .github/smoke/smoke.mjs out-appimage'
+      - name: App log
+        if: always()
+        run: tail -n 40 app.log || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: smoke-appimage-${{ matrix.os }}, path: out-appimage, retention-days: 14 }
+
+  test-snap:
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '22' }
+      - uses: actions/download-artifact@v4
+        with: { name: linux-packages, path: pkg }
+      - name: Install the .snap
+        run: |
+          ls pkg/*.snap
+          sudo snap install --dangerous pkg/*.snap
+          sudo apt-get update && sudo apt-get install -y xvfb
+      - name: Open the app and test its pages
+        run: |
+          xvfb-run -a -s '-screen 0 1440x900x24' bash -c 'snap run kroma-ecosystem --remote-debugging-port=$KROMA_DEBUG_PORT > app.log 2>&1 & node .github/smoke/smoke.mjs out-snap'
+      - name: Uninstall
+        run: sudo snap remove kroma-ecosystem
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: smoke-snap, path: out-snap, retention-days: 14 }
+
+  test-flatpak:
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '22' }
+      - uses: actions/download-artifact@v4
+        with: { name: linux-packages, path: pkg }
+      - name: Install the .flatpak
+        run: |
+          ls pkg/*.flatpak
+          sudo apt-get update && sudo apt-get install -y flatpak xvfb
+          flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+          flatpak install --user -y --noninteractive pkg/*.flatpak
+      - name: Open the app and test its pages
+        run: |
+          xvfb-run -a -s '-screen 0 1440x900x24' bash -c 'flatpak run com.kroma.ecosystem --remote-debugging-port=$KROMA_DEBUG_PORT > app.log 2>&1 & node .github/smoke/smoke.mjs out-flatpak'
+      - name: Uninstall
+        run: flatpak uninstall --user -y --noninteractive com.kroma.ecosystem
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: smoke-flatpak, path: out-flatpak, retention-days: 14 }
+
+  publish:
+    needs: [build, test-deb, test-rpm, test-snap, test-flatpak]
+    if: always() && needs.build.result == 'success'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with: { name: linux-packages, path: pkg }
+      - name: Attach the packages that passed
+        env:
+          DEB: ${{ needs.test-deb.result }}
+          RPM: ${{ needs.test-rpm.result }}
+          SNAP: ${{ needs.test-snap.result }}
+          FLATPAK: ${{ needs.test-flatpak.result }}
+        run: |
+          files=()
+          [ "$DEB" = success ] && files+=(pkg/*.deb)
+          [ "$RPM" = success ] && files+=(pkg/*.rpm)
+          [ "$SNAP" = success ] && files+=(pkg/*.snap)
+          [ "$FLATPAK" = success ] && files+=(pkg/*.flatpak)
+          echo "deb=$DEB rpm=$RPM snap=$SNAP flatpak=$FLATPAK"
+          if [ ${#files[@]} -gt 0 ]; then gh release upload "$TAG" "${files[@]}" --repo "$GITHUB_REPOSITORY" --clobber; fi
+          for f in "${files[@]}"; do sha256sum "$f"; done

@@ -1,0 +1,73 @@
+{
+  "name": "kroma-ecosystem",
+  "productName": "Kroma Ecosystem",
+  "version": "0.0.0",
+  "description": "21 studios for notes, PDFs, slides and media in one private workspace",
+  "homepage": "https://kromaecosystem.tech",
+  "author": "Mutlu Kurt <withkromastudio@gmail.com>",
+  "license": "UNLICENSED",
+  "private": true,
+  "devDependencies": {
+    "electron-builder": "26.15.3"
+  },
+  "build": {
+    "appId": "com.kroma.ecosystem",
+    "productName": "Kroma Ecosystem",
+    "copyright": "Copyright © 2026 Mutlu Kurt",
+    "electronVersion": "44.5.1",
+    "directories": {
+      "output": "dist"
+    },
+    "npmRebuild": false,
+    "linux": {
+      "icon": "build/icon.png",
+      "category": "Office",
+      "executableName": "kroma-ecosystem",
+      "maintainer": "Mutlu Kurt <withkromastudio@gmail.com>",
+      "vendor": "Mutlu Kurt",
+      "synopsis": "21 studios for notes, PDFs, slides and media in one private workspace",
+      "description": "Kroma Ecosystem puts Docs, Slides, PDF tools, OCR, transcription, flashcards, citations and more side by side. Files are processed on your computer.",
+      "desktop": {
+        "entry": {
+          "Name": "Kroma Ecosystem",
+          "StartupWMClass": "Kroma Ecosystem",
+          "Keywords": "notes;pdf;slides;ocr;transcribe;"
+        }
+      },
+      "artifactName": "Kroma-${version}-${arch}.${ext}"
+    },
+    "deb": {
+      "packageName": "kroma-ecosystem"
+    },
+    "rpm": {
+      "packageName": "kroma-ecosystem"
+    },
+    "snap": {
+      "summary": "Notes, PDFs, slides and media in one private workspace",
+      "grade": "stable",
+      "confinement": "strict"
+    },
+    "flatpak": {
+      "runtime": "org.freedesktop.Platform",
+      "runtimeVersion": "24.08",
+      "sdk": "org.freedesktop.Sdk",
+      "base": "org.electronjs.Electron2.BaseApp",
+      "baseVersion": "24.08",
+      "finishArgs": [
+        "--share=ipc",
+        "--share=network",
+        "--socket=x11",
+        "--socket=wayland",
+        "--socket=pulseaudio",
+        "--device=dri",
+        "--filesystem=xdg-documents",
+        "--filesystem=xdg-download",
+        "--filesystem=xdg-pictures",
+        "--filesystem=xdg-music",
+        "--filesystem=xdg-videos",
+        "--talk-name=org.freedesktop.Notifications",
+        "--talk-name=org.freedesktop.secrets"
+      ]
+    }
+  }
+}
