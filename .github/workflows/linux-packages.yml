@@ -11,9 +11,14 @@ on:
       tag:
         description: Release tag (for example v2.7.0)
         required: true
+      packages_from_run:
+        description: Optional run id whose built packages to test again instead of rebuilding
+        required: false
+        default: ''
 
 permissions:
   contents: read
+  actions: read
 
 env:
   TAG: ${{ github.event.release.tag_name || inputs.tag }}
@@ -22,6 +27,7 @@ env:
 
 jobs:
   build:
+    if: ${{ !inputs.packages_from_run }}
     runs-on: ubuntu-22.04
     timeout-minutes: 60
     steps:
@@ -78,6 +84,7 @@ jobs:
 
   test-deb:
     needs: build
+    if: ${{ always() && (needs.build.result == 'success' || inputs.packages_from_run) }}
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
@@ -85,7 +92,11 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: '22' }
       - uses: actions/download-artifact@v4
-        with: { name: linux-packages, path: pkg }
+        with:
+          name: linux-packages
+          path: pkg
+          run-id: ${{ inputs.packages_from_run || github.run_id }}
+          github-token: ${{ github.token }}
       - name: Install the .deb
         run: |
           sudo apt-get update
@@ -105,13 +116,18 @@ jobs:
 
   test-rpm:
     needs: build
+    if: ${{ always() && (needs.build.result == 'success' || inputs.packages_from_run) }}
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     container: fedora:41
     steps:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
-        with: { name: linux-packages, path: pkg }
+        with:
+          name: linux-packages
+          path: pkg
+          run-id: ${{ inputs.packages_from_run || github.run_id }}
+          github-token: ${{ github.token }}
       - name: Install the .rpm
         run: |
           dnf install -y ./pkg/*.rpm nodejs xorg-x11-server-Xvfb xorg-x11-xauth
@@ -158,6 +174,7 @@ jobs:
 
   test-snap:
     needs: build
+    if: ${{ always() && (needs.build.result == 'success' || inputs.packages_from_run) }}
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
@@ -165,7 +182,11 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: '22' }
       - uses: actions/download-artifact@v4
-        with: { name: linux-packages, path: pkg }
+        with:
+          name: linux-packages
+          path: pkg
+          run-id: ${{ inputs.packages_from_run || github.run_id }}
+          github-token: ${{ github.token }}
       - name: Install the .snap
         run: |
           ls pkg/*.snap
@@ -196,6 +217,7 @@ jobs:
 
   test-flatpak:
     needs: build
+    if: ${{ always() && (needs.build.result == 'success' || inputs.packages_from_run) }}
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
@@ -203,7 +225,11 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: '22' }
       - uses: actions/download-artifact@v4
-        with: { name: linux-packages, path: pkg }
+        with:
+          name: linux-packages
+          path: pkg
+          run-id: ${{ inputs.packages_from_run || github.run_id }}
+          github-token: ${{ github.token }}
       - name: Install the .flatpak
         run: |
           ls pkg/*.flatpak
@@ -221,13 +247,18 @@ jobs:
 
   publish:
     needs: [build, test-deb, test-rpm, test-snap, test-flatpak]
-    if: always() && needs.build.result == 'success'
+    if: ${{ always() && (needs.build.result == 'success' || inputs.packages_from_run) }}
     runs-on: ubuntu-24.04
     permissions:
       contents: write
+      actions: read
     steps:
       - uses: actions/download-artifact@v4
-        with: { name: linux-packages, path: pkg }
+        with:
+          name: linux-packages
+          path: pkg
+          run-id: ${{ inputs.packages_from_run || github.run_id }}
+          github-token: ${{ github.token }}
       - name: Attach the packages that passed
         env:
           DEB: ${{ needs.test-deb.result }}
