@@ -11,7 +11,7 @@
 ![Windows](https://img.shields.io/badge/Windows-10%20·%2011%20·%2064--bit-111111?logo=windows)
 ![Linux](https://img.shields.io/badge/Linux-AppImage%20·%20deb%20·%20rpm%20·%20Snap%20·%20Flatpak-111111?logo=linux)
 
-**[Download for Mac](https://github.com/mutlukurt/kromadesktop/releases/download/v2.7.2/Kroma-2.7.2-arm64.dmg)** · **[Download for Windows](https://github.com/mutlukurt/kromadesktop/releases/download/v2.7.2/Kroma-Setup-2.7.2-x64.exe)** · **[Download for Linux](#download)** · [Use it in the browser](https://kromaecosystem.tech)
+**[Download for Mac](https://github.com/mutlukurt/kromadesktop/releases/download/v2.7.3/Kroma-2.7.3-arm64.dmg)** · **[Download for Windows](https://github.com/mutlukurt/kromadesktop/releases/download/v2.7.3/Kroma-Setup-2.7.3-x64.exe)** · **[Download for Linux](#download)** · [Use it in the browser](https://kromaecosystem.tech)
 
 </div>
 
@@ -53,13 +53,13 @@ PDF editing, OCR, image conversion and Whisper transcription run on your compute
 
 | Platform | Download | Size | Requires |
 |---|---|---|---|
-| **macOS** | [Kroma-2.7.2-arm64.dmg](https://github.com/mutlukurt/kromadesktop/releases/download/v2.7.2/Kroma-2.7.2-arm64.dmg) | 844 MB | Apple silicon (M1 or later), macOS 12 or later |
-| **Windows** | [Kroma-Setup-2.7.2-x64.exe](https://github.com/mutlukurt/kromadesktop/releases/download/v2.7.2/Kroma-Setup-2.7.2-x64.exe) | 808 MB | Windows 10 or 11, 64-bit |
-| **Linux · AppImage** | [Kroma-2.7.2-x86_64.AppImage](https://github.com/mutlukurt/kromadesktop/releases/download/v2.7.2/Kroma-2.7.2-x86_64.AppImage) | 854 MB | Any 64-bit distribution |
-| **Linux · .deb** | [Kroma-2.7.2-amd64.deb](https://github.com/mutlukurt/kromadesktop/releases/download/v2.7.2/Kroma-2.7.2-amd64.deb) | 808 MB | Ubuntu, Debian, Linux Mint, Pop!_OS |
-| **Linux · .rpm** | [Kroma-2.7.2-x86_64.rpm](https://github.com/mutlukurt/kromadesktop/releases/download/v2.7.2/Kroma-2.7.2-x86_64.rpm) | 774 MB | Fedora, RHEL, CentOS Stream, openSUSE |
-| **Linux · Snap** | [Kroma-2.7.2-amd64.snap](https://github.com/mutlukurt/kromadesktop/releases/download/v2.7.2/Kroma-2.7.2-amd64.snap) | 820 MB | Any distribution with snapd |
-| **Linux · Flatpak** | [Kroma-2.7.2-x86_64.flatpak](https://github.com/mutlukurt/kromadesktop/releases/download/v2.7.2/Kroma-2.7.2-x86_64.flatpak) | 776 MB | Any distribution with Flatpak |
+| **macOS** | [Kroma-2.7.3-arm64.dmg](https://github.com/mutlukurt/kromadesktop/releases/download/v2.7.3/Kroma-2.7.3-arm64.dmg) | 845 MB | Apple silicon (M1 or later), macOS 12 or later |
+| **Windows** | [Kroma-Setup-2.7.3-x64.exe](https://github.com/mutlukurt/kromadesktop/releases/download/v2.7.3/Kroma-Setup-2.7.3-x64.exe) | 803 MB | Windows 10 or 11, 64-bit |
+| **Linux · AppImage** | [Kroma-2.7.3-x86_64.AppImage](https://github.com/mutlukurt/kromadesktop/releases/download/v2.7.3/Kroma-2.7.3-x86_64.AppImage) | 855 MB | Any 64-bit distribution |
+| **Linux · .deb** | [Kroma-2.7.3-amd64.deb](https://github.com/mutlukurt/kromadesktop/releases/download/v2.7.3/Kroma-2.7.3-amd64.deb) | 809 MB | Ubuntu, Debian, Linux Mint, Pop!_OS |
+| **Linux · .rpm** | [Kroma-2.7.3-x86_64.rpm](https://github.com/mutlukurt/kromadesktop/releases/download/v2.7.3/Kroma-2.7.3-x86_64.rpm) | 775 MB | Fedora, RHEL, CentOS Stream, openSUSE |
+| **Linux · Snap** | [Kroma-2.7.3-amd64.snap](https://github.com/mutlukurt/kromadesktop/releases/download/v2.7.3/Kroma-2.7.3-amd64.snap) | 821 MB | Any distribution with snapd |
+| **Linux · Flatpak** | [Kroma-2.7.3-x86_64.flatpak](https://github.com/mutlukurt/kromadesktop/releases/download/v2.7.3/Kroma-2.7.3-x86_64.flatpak) | 777 MB | Any distribution with Flatpak |
 
 Everything also runs in the browser at [kromaecosystem.tech](https://kromaecosystem.tech).
 
@@ -93,27 +93,27 @@ Everything also runs in the browser at [kromaecosystem.tech](https://kromaecosys
 
 ```bash
 # AppImage: any distribution
-chmod +x Kroma-2.7.2-x86_64.AppImage && ./Kroma-2.7.2-x86_64.AppImage
+chmod +x Kroma-2.7.3-x86_64.AppImage && ./Kroma-2.7.3-x86_64.AppImage
 ```
 
 ```bash
 # Ubuntu, Debian, Linux Mint, Pop!_OS
-sudo apt install ./Kroma-2.7.2-amd64.deb
+sudo apt install ./Kroma-2.7.3-amd64.deb
 ```
 
 ```bash
 # Fedora, RHEL, CentOS Stream, openSUSE
-sudo dnf install ./Kroma-2.7.2-x86_64.rpm
+sudo dnf install ./Kroma-2.7.3-x86_64.rpm
 ```
 
 ```bash
 # Snap: the second command connects Chromium's sandbox, which local installs don't do on their own
-sudo snap install --dangerous ./Kroma-2.7.2-amd64.snap && sudo snap connect kroma-ecosystem:browser-sandbox
+sudo snap install --dangerous ./Kroma-2.7.3-amd64.snap && sudo snap connect kroma-ecosystem:browser-sandbox
 ```
 
 ```bash
 # Flatpak
-flatpak install --user ./Kroma-2.7.2-x86_64.flatpak
+flatpak install --user ./Kroma-2.7.3-x86_64.flatpak
 ```
 
 </details>
@@ -124,24 +124,24 @@ Each file's SHA-256 checksum should match exactly:
 
 | File | SHA-256 |
 |---|---|
-| `Kroma-2.7.2-arm64.dmg` | `9ed1d9b0fa9403424323accbbc4f8e96e40261d8a4255b87080af828a0a3f12a` |
-| `Kroma-Setup-2.7.2-x64.exe` | `fe80ffb57e748c6e8c0e8837899b9ed3060fd071c5f0c97a9d8bce2ff7575b47` |
-| `Kroma-2.7.2-x86_64.AppImage` | `3e1f4bbf502b9f29447afab305ffbbb3298993d02e9268d5b276fd4bbd798c4b` |
-| `Kroma-2.7.2-amd64.deb` | `62ef9156b8211d35d3374b9eaf2e307c90d3e824567782e49a8a30a1d4345619` |
-| `Kroma-2.7.2-x86_64.rpm` | `02e9f81df76d41ab943f79d70968793d5aee87a8503912c0be8f202745f62cf5` |
-| `Kroma-2.7.2-amd64.snap` | `6ee8b025e7bc9c2bb2353bdca484290b1ca617682ca7c42b977641ddaaa60d95` |
-| `Kroma-2.7.2-x86_64.flatpak` | `381c7f63c9aa1f77a98a355768c6877859a9e13e3577f7e33e2add915c62ffca` |
+| `Kroma-2.7.3-arm64.dmg` | `789e682f2b5773f5fc9bf89057d2d61509118048d937472bbc6058cf58bf141c` |
+| `Kroma-Setup-2.7.3-x64.exe` | `499c59184354ad7e914a8a3239bf7e6ec8751481a1b68e50783d0d0d1007c79e` |
+| `Kroma-2.7.3-x86_64.AppImage` | `d7c55d985984a4fb1eb8e3456caf4de4d3cabffbc27d5135e074d5305ab22cb7` |
+| `Kroma-2.7.3-amd64.deb` | `2a9ee5ca1579ef78d2140a145b2dc633ab8bfa8d748559940256763ffd80a1e0` |
+| `Kroma-2.7.3-x86_64.rpm` | `6e0a4334a8b56246e52450847bdcbdca09543781a3e95a3b77316c3d60b578a3` |
+| `Kroma-2.7.3-amd64.snap` | `89ac2a6e8507417356d608231c969d24fdd643a113be97ae5791606bc34f7ec6` |
+| `Kroma-2.7.3-x86_64.flatpak` | `9d1c570d77ff90bc54bbee318ac5d5181610a6b6c6e7c2b5b1ce587bf29e0b29` |
 
 ```bash
 # macOS (Terminal)
-shasum -a 256 ~/Downloads/Kroma-2.7.2-arm64.dmg
+shasum -a 256 ~/Downloads/Kroma-2.7.3-arm64.dmg
 # Linux
-sha256sum Kroma-2.7.2-x86_64.AppImage
+sha256sum Kroma-2.7.3-x86_64.AppImage
 ```
 
 ```powershell
 # Windows (PowerShell)
-Get-FileHash $HOME\Downloads\Kroma-Setup-2.7.2-x64.exe
+Get-FileHash $HOME\Downloads\Kroma-Setup-2.7.3-x64.exe
 ```
 
 ## All 21 studios
