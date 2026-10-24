@@ -49,9 +49,17 @@ await new Promise((resolve, reject) => {
   ws.onerror = reject;
 });
 const send = (method, params = {}) =>
-  new Promise((resolve) => {
+  new Promise((resolve, reject) => {
     const i = ++id;
-    pending.set(i, resolve);
+    const timer = setTimeout(() => {
+      pending.delete(i);
+      reject(new Error(`Desktop did not answer ${method} within 45 seconds`));
+    }, 45000);
+    pending.set(i, (message) => {
+      clearTimeout(timer);
+      if (message.error) reject(new Error(`${method}: ${message.error.message}`));
+      else resolve(message);
+    });
     ws.send(JSON.stringify({ id: i, method, params }));
   });
 const evaluate = async (expression) =>
@@ -68,6 +76,7 @@ const pages = ['home', 'store', 'store/lottie', 'store/stickers', 'pricing', 'do
 const report = { platform: await evaluate('navigator.userAgent'), pages: [] };
 let emptyPages = 0;
 for (const hash of pages) {
+  console.log(`Checking ${hash}`);
   await evaluate(`location.hash = '#${hash}'; 1`);
   await new Promise((r) => setTimeout(r, 4000));
   const info = JSON.parse(
