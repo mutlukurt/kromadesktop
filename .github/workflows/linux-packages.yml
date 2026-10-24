@@ -157,7 +157,10 @@ jobs:
     if: ${{ always() && (needs.build.result == 'success' || inputs.packages_from_run) }}
     runs-on: ubuntu-24.04
     timeout-minutes: 20
-    container: fedora:41
+    container:
+      image: fedora:41
+      # Desktop Chromium needs more than Docker's small default shared memory and file limits.
+      options: --shm-size=2g --ulimit nofile=65536:65536
     steps:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
@@ -177,7 +180,7 @@ jobs:
           # Chromium's sandbox cannot start inside this container, so --no-sandbox is for the test only.
           useradd -m tester
           chmod -R a+rwX . && mkdir -p out-rpm && chmod 777 out-rpm
-          runuser -u tester -- xvfb-run -a -s '-screen 0 1440x900x24' bash -c '"/opt/Kroma Ecosystem/kroma-ecosystem" --no-sandbox --remote-debugging-port=$KROMA_DEBUG_PORT > /tmp/app.log 2>&1 & KROMA_DEBUG_PORT=$KROMA_DEBUG_PORT node .github/smoke/smoke.mjs out-rpm || { tail -n 80 /tmp/app.log; exit 1; }'
+          runuser -u tester -- xvfb-run -a -s '-screen 0 1440x900x24' bash -c 'ulimit -n 8192; echo "Open file limit: $(ulimit -n)"; "/opt/Kroma Ecosystem/kroma-ecosystem" --no-sandbox --remote-debugging-port=$KROMA_DEBUG_PORT > /tmp/app.log 2>&1 & KROMA_DEBUG_PORT=$KROMA_DEBUG_PORT node .github/smoke/smoke.mjs out-rpm || { tail -n 80 /tmp/app.log; exit 1; }'
       - name: Uninstall
         run: dnf remove -y kroma-ecosystem && test ! -e "/opt/Kroma Ecosystem/kroma-ecosystem"
       - uses: actions/upload-artifact@v4

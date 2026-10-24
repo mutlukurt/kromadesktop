@@ -100,8 +100,9 @@ console.log(`uncaught exceptions: ${exceptions.length}, console errors: ${consol
 for (const line of [...exceptions, ...consoleErrors, ...failedRequests]) console.log(`  ${line}`);
 ws.close();
 
-if (exceptions.length || emptyPages) {
-  console.error(`FAILED: ${exceptions.length} uncaught exception(s), ${emptyPages} empty page(s)`);
+const resourceFailures = failedRequests.filter((entry) => entry.includes('ERR_INSUFFICIENT_RESOURCES'));
+if (exceptions.length || emptyPages || resourceFailures.length) {
+  console.error(`FAILED: ${exceptions.length} uncaught exception(s), ${emptyPages} empty page(s), ${resourceFailures.length} resource failure(s)`);
   process.exit(1);
 }
 console.log('PASSED');
