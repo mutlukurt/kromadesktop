@@ -16,8 +16,10 @@ on:
         required: false
         default: ''
 
+# GitHub requires repository write access to read unpublished draft release assets.
+# This lets workflow_dispatch validate installers before the release becomes public.
 permissions:
-  contents: read
+  contents: write
   actions: read
 
 env:

@@ -11,8 +11,10 @@ on:
         description: Release tag to test (for example v2.7.0)
         required: true
 
+# GitHub requires repository write access to read unpublished draft release assets.
+# This lets workflow_dispatch validate installers before the release becomes public.
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   smoke:
