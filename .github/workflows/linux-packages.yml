@@ -4,8 +4,8 @@
 name: Linux packages
 
 on:
-  release:
-    types: [published]
+  # Validate draft assets explicitly before publication. Publishing must not
+  # rebuild/replace already tested installers and invalidate their checksums.
   workflow_dispatch:
     inputs:
       tag:
