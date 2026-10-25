@@ -72,8 +72,22 @@ await send('Page.enable');
 // Let the first screen finish loading before stepping through pages.
 await new Promise((r) => setTimeout(r, 8000));
 
+// 2.8.0+: a fresh install opens on the start screen (the Kroma film behind sign-in / create account); studios open
+// after sign-in. CI has no account, so the start screen must be there and the pages below show behind it.
+const start = JSON.parse(
+  await evaluate(
+    `JSON.stringify((() => { const s = document.querySelector('[data-desktop-screen]'); const v = s && s.querySelector('video'); return { shown: !!s, signIn: !!s && /Sign in/.test(s.innerText), video: v ? { readyState: v.readyState, error: v.error && v.error.code } : null }; })())`
+  )
+);
+console.log(`start screen: ${JSON.stringify(start)}`);
+{
+  const shot = await send('Page.captureScreenshot', { format: 'png' });
+  fs.writeFileSync(`${outDir}/start-screen.png`, Buffer.from(shot.result.data, 'base64'));
+}
+const startScreenMissing = !start.shown || !start.signIn || !start.video || start.video.error;
+
 const pages = ['home', 'store', 'store/lottie', 'store/stickers', 'pricing', 'downloads', 'slides', 'docs', 'pdf'];
-const report = { platform: await evaluate('navigator.userAgent'), pages: [] };
+const report = { platform: await evaluate('navigator.userAgent'), start, pages: [] };
 let emptyPages = 0;
 for (const hash of pages) {
   console.log(`Checking ${hash}`);
@@ -101,8 +115,8 @@ for (const line of [...exceptions, ...consoleErrors, ...failedRequests]) console
 ws.close();
 
 const resourceFailures = failedRequests.filter((entry) => entry.includes('ERR_INSUFFICIENT_RESOURCES'));
-if (exceptions.length || emptyPages || resourceFailures.length) {
-  console.error(`FAILED: ${exceptions.length} uncaught exception(s), ${emptyPages} empty page(s), ${resourceFailures.length} resource failure(s)`);
+if (exceptions.length || emptyPages || resourceFailures.length || startScreenMissing) {
+  console.error(`FAILED: ${exceptions.length} uncaught exception(s), ${emptyPages} empty page(s), ${resourceFailures.length} resource failure(s)${startScreenMissing ? ', start screen missing or its film failed' : ''}`);
   process.exit(1);
 }
 console.log('PASSED');
